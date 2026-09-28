@@ -2,10 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Solar System - Group 2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tata Surya 3D Interaktif & Realistis</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
         
         /* UI Kaca (Glassmorphism) */
@@ -13,18 +13,18 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
         }
-        .header { padding: 25px; color: white; text-shadow: 0 2px 10px rgba(0,0,0,1); }
-        .header h1 { margin: 0; font-size: 2.5rem; letter-spacing: 3px; font-weight: 800; text-transform: uppercase; }
-        .header p { margin: 5px 0 0 0; font-size: 1rem; opacity: 0.9; color: #b8c6db; }
+        .header { padding: 20px; color: white; text-shadow: 0 2px 10px rgba(0,0,0,1); }
+        .header h1 { margin: 0; font-size: 2rem; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; }
+        .header p { margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9; color: #b8c6db; }
         
-        /* Panel Info */
+        /* Panel Info - Responsif untuk Desktop & Mobile */
         #info-panel {
             position: absolute; right: -420px; top: 50%; transform: translateY(-50%);
-            width: 360px; max-height: 85vh; overflow-y: auto;
+            width: 360px; max-height: 80vh; overflow-y: auto;
             background: linear-gradient(135deg, rgba(10, 12, 20, 0.9), rgba(5, 5, 8, 0.95));
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-left: 1px solid rgba(255,255,255,0.1);
-            color: white; padding: 35px; transition: right 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            color: white; padding: 30px; transition: right 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: auto; border-radius: 24px 0 0 24px; box-shadow: -10px 0 40px rgba(0,0,0,0.9);
         }
         
@@ -33,20 +33,20 @@
         #info-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
         
         #info-panel.active { right: 0; }
-        #info-title { font-size: 2.2rem; margin-top: 0; margin-bottom: 5px; color: #64f3d5; text-shadow: 0 0 15px rgba(100,243,213,0.4);}
-        #info-subtitle { font-size: 0.9rem; color: #a0aec0; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; letter-spacing: 1px;}
+        #info-title { font-size: 2rem; margin-top: 0; margin-bottom: 5px; color: #64f3d5; text-shadow: 0 0 15px rgba(100,243,213,0.4);}
+        #info-subtitle { font-size: 0.85rem; color: #a0aec0; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; letter-spacing: 1px;}
         
-        .info-item { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 8px;}
-        .info-label { font-size: 0.8rem; color: #777; text-transform: uppercase; letter-spacing: 1px;}
-        .info-value { font-size: 1.05rem; font-weight: 600; text-align: right; color: #eee;}
+        .info-item { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 6px;}
+        .info-label { font-size: 0.75rem; color: #777; text-transform: uppercase; letter-spacing: 1px;}
+        .info-value { font-size: 0.95rem; font-weight: 600; text-align: right; color: #eee;}
         
-        .info-description { margin-top: 25px; font-size: 0.95rem; line-height: 1.7; color: #ccc; text-align: justify; }
+        .info-description { margin-top: 20px; font-size: 0.9rem; line-height: 1.6; color: #ccc; text-align: justify; }
 
         .close-btn {
             background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
             border: 1px solid rgba(255,255,255,0.2);
             color: white; padding: 12px 15px; border-radius: 8px; cursor: pointer;
-            margin-top: 30px; width: 100%; transition: all 0.3s;
+            margin-top: 25px; width: 100%; transition: all 0.3s;
             font-weight: bold; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem;
         }
         .close-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
@@ -64,12 +64,17 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* Penyesuaian Mobile / HP */
         @media (max-width: 768px) {
-            .header h1 { font-size: 1.8rem; }
+            .header { padding: 15px; }
+            .header h1 { font-size: 1.5rem; }
+            .header p { font-size: 0.75rem; }
             #info-panel {
-                width: 100%; right: 0; bottom: -100%; top: auto; transform: none; max-height: 60vh;
-                border-radius: 20px 20px 0 0; border-left: none; border-top: 1px solid rgba(255,255,255,0.2);
+                width: 100%; right: 0; bottom: -100%; top: auto; transform: none; 
+                max-height: 55vh; border-radius: 24px 24px 0 0; 
+                border-left: none; border-top: 1px solid rgba(255,255,255,0.2);
                 transition: bottom 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+                padding: 20px 25px 30px 25px;
             }
             #info-panel.active { bottom: 0; right: 0; }
         }
@@ -79,7 +84,7 @@
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <h2 id="loading-text" style="letter-spacing: 2px; font-weight: 300;">MEMASUKI LUAR ANGKASA...</h2>
+        <h2 id="loading-text" style="letter-spacing: 2px; font-weight: 300; font-size: 1.2rem;">MEMASUKI LUAR ANGKASA...</h2>
     </div>
 
     <div id="canvas-container"></div>
@@ -87,7 +92,7 @@
     <div id="ui-layer">
         <div class="header">
             <h1>Sistem Tata Surya</h1>
-            <p>Eksplorasi ruang angkasa interaktif. Klik planet untuk Info Rinci.</p>
+            <p>Geser untuk navigasi. Ketuk planet untuk Info Rinci.</p>
         </div>
         
         <div id="info-panel">
@@ -269,7 +274,7 @@
         let selectedPlanet = null;
 
         const planetsData = [
-            { id: 'sun', name: 'Sun', type: 'Bintang Utama', color: 0xffcc33, radius: 15, distance: 0, speed: 0, mass: '1.989 × 10^30 kg', temp: '5.500 °C (Permukaan)', textureMap: 'sunmap.jpg', desc: 'Pusat tata surya kita. Bola plasma raksasa yang menyala terang benderang.' },
+            { id: 'sun', name: 'Matahari', type: 'Bintang Utama', color: 0xffcc33, radius: 15, distance: 0, speed: 0, mass: '1.989 × 10^30 kg', temp: '5.500 °C (Permukaan)', textureMap: 'sunmap.jpg', desc: 'Pusat tata surya kita. Bola plasma raksasa yang menyala terang benderang.' },
             { id: 'mercury', name: 'Merkurius', type: 'Planet Terestrial', color: 0x888888, radius: 1.5, distance: 30, speed: 0.02, mass: '3.301 × 10^23 kg', temp: '167 °C', textureMap: 'mercurymap.jpg', desc: 'Planet terkecil dan terdekat dari Matahari.' },
             { id: 'venus', name: 'Venus', type: 'Planet Terestrial', color: 0xe3bb76, radius: 3.5, distance: 45, speed: 0.015, mass: '4.867 × 10^24 kg', temp: '462 °C', textureMap: 'venusmap.jpg', desc: 'Planet terpanas di tata surya akibat efek rumah kaca ekstrem.' },
             { id: 'earth', name: 'Bumi', type: 'Planet Terestrial', color: 0x2b82c9, radius: 4, distance: 62, speed: 0.012, mass: '5.972 × 10^24 kg', temp: '15 °C', textureMap: 'earthmap.jpg', nightMap: 'earthnightmap.jpg', desc: 'Satu-satunya tempat di alam semesta yang diketahui mendukung kehidupan.' },
@@ -394,66 +399,71 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         
-        // --- LOGIKA MOUSE DRAG UNTUK PUTAR PLANET SAAT DI-HIGHLIGHT ---
+        // --- PERBAIKAN KLIK UNTUK MOBILE & DESKTOP (SUPAYA PLANET BISA DI-KLIK DI HP) ---
         let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
+        let pointerDownPos = { x: 0, y: 0 };
 
         window.addEventListener('pointerdown', (e) => {
             if(e.target.closest('#info-panel')) return;
-            isDragging = true;
-            previousMousePosition = { x: e.clientX, y: e.clientY };
+            isDragging = false;
+            pointerDownPos.x = e.clientX;
+            pointerDownPos.y = e.clientY;
         });
 
         window.addEventListener('pointermove', (e) => {
+            const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+            if (dist > 5) {
+                isDragging = true; // Jika digeser, tandai sebagai navigasi/drag
+            }
+
             if (!isDragging) return;
 
-            const deltaX = e.clientX - previousMousePosition.x;
-            const deltaY = e.clientY - previousMousePosition.y;
+            const deltaX = e.clientX - pointerDownPos.x;
+            const deltaY = e.clientY - pointerDownPos.y;
 
             if (selectedPlanet) {
-                // Jika planet sedang di-highlight, putar planetnya saja 360 derajat ke segala arah
                 selectedPlanet.rotation.y += deltaX * 0.005;
                 selectedPlanet.rotation.x += deltaY * 0.005;
             }
 
-            previousMousePosition = { x: e.clientX, y: e.clientY };
+            pointerDownPos.x = e.clientX;
+            pointerDownPos.y = e.clientY;
         });
 
-        window.addEventListener('pointerup', () => {
-            isDragging = false;
-        });
-
-        window.addEventListener('click', (event) => {
+        window.addEventListener('pointerup', (event) => {
             if(event.target.id === 'close-btn' || event.target.closest('#info-panel')) return;
             
-            // Hitung jarak geser mouse untuk membedakan antara klik murni atau drag putar planet
-            const moveDist = Math.hypot(event.clientX - previousMousePosition.x, event.clientY - previousMousePosition.y);
-            if (moveDist > 3 && isDragging) return; 
+            // Jika tidak digeser (murni ketukan/klik), proses pemilihan planet
+            if (!isDragging) {
+                const clientX = event.clientX;
+                const clientY = event.clientY;
 
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(planetMeshes);
-            
-            if (intersects.length > 0) {
-                const clickedMesh = intersects[0].object;
-                selectedPlanet = clickedMesh;
+                mouse.x = (clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(clientY / window.innerHeight) * 2 + 1;
                 
-                const pData = clickedMesh.userData;
-                document.getElementById('info-title').innerText = pData.name;
-                document.getElementById('info-type').innerText = pData.type;
-                document.getElementById('info-distance').innerText = pData.id === 'sun' ? 'Pusat Tata Surya' : pData.distance + ' Juta KM (Skala)';
-                document.getElementById('info-radius').innerText = pData.radius + ' (Skala)';
-                document.getElementById('info-mass').innerText = pData.mass;
-                document.getElementById('info-temp').innerText = pData.temp;
-                document.getElementById('info-desc').innerText = pData.desc;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(planetMeshes);
                 
-                document.getElementById('info-panel').classList.add('active');
-            } else {
-                selectedPlanet = null;
-                document.getElementById('info-panel').classList.remove('active');
+                if (intersects.length > 0) {
+                    const clickedMesh = intersects[0].object;
+                    selectedPlanet = clickedMesh;
+                    
+                    const pData = clickedMesh.userData;
+                    document.getElementById('info-title').innerText = pData.name;
+                    document.getElementById('info-type').innerText = pData.type;
+                    document.getElementById('info-distance').innerText = pData.id === 'sun' ? 'Pusat Tata Surya' : pData.distance + ' Juta KM (Skala)';
+                    document.getElementById('info-radius').innerText = pData.radius + ' (Skala)';
+                    document.getElementById('info-mass').innerText = pData.mass;
+                    document.getElementById('info-temp').innerText = pData.temp;
+                    document.getElementById('info-desc').innerText = pData.desc;
+                    
+                    document.getElementById('info-panel').classList.add('active');
+                } else {
+                    selectedPlanet = null;
+                    document.getElementById('info-panel').classList.remove('active');
+                }
             }
+            isDragging = false;
         });
 
         document.getElementById('close-btn').addEventListener('click', () => {
@@ -476,10 +486,9 @@
                 let currentRotationSpeed = data.normalRotationSpeed;
                 
                 if (selectedPlanet === mesh) {
-                    currentOrbitSpeed = 0; // Hentikan orbit agar kamera zoom in stabil
-                    // Jika sedang tidak didrag mouse, putar pelan otomatis di sumbu Y
+                    currentOrbitSpeed = 0; 
                     if (!isDragging) {
-                        mesh.rotation.y += 0.002;
+                        mesh.rotation.y += 0.002; 
                     }
                 } else if (selectedPlanet !== null) {
                     currentOrbitSpeed = data.normalSpeed * 0.1;
@@ -518,10 +527,10 @@
                 const camRight = new THREE.Vector3(1, 0, 0);
                 camRight.applyQuaternion(camera.quaternion);
                 
-                const shiftAmount = selectedPlanet.userData.radius * (window.innerWidth < 768 ? 0 : 1.8); 
+                // Responsif: geser target kamera lebih sedikit di layar HP agar panel tidak menutupi planet
+                const shiftAmount = selectedPlanet.userData.radius * (window.innerWidth < 768 ? 0.5 : 1.8); 
                 const shiftedTarget = targetPos.clone().add(camRight.multiplyScalar(shiftAmount));
                 
-                // Kamera dan latar belakang terkunci stabil tanpa terpental
                 camera.position.lerp(targetCameraPos, 0.04);
                 controls.target.lerp(shiftedTarget, 0.04);
             } else {

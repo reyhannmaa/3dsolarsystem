@@ -64,17 +64,18 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Penyesuaian Mobile / HP */
+        /* Penyesuaian Mobile / HP - Dibatasi agar panel tidak menutupi layar atas */
         @media (max-width: 768px) {
             .header { padding: 15px; }
             .header h1 { font-size: 1.5rem; }
             .header p { font-size: 0.75rem; }
             #info-panel {
                 width: 100%; right: 0; bottom: -100%; top: auto; transform: none; 
-                max-height: 55vh; border-radius: 24px 24px 0 0; 
+                max-height: 45vh; /* Mengurangi tinggi panel agar planet tidak tertutup */
+                border-radius: 24px 24px 0 0; 
                 border-left: none; border-top: 1px solid rgba(255,255,255,0.2);
                 transition: bottom 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-                padding: 20px 25px 30px 25px;
+                padding: 15px 20px 25px 20px;
             }
             #info-panel.active { bottom: 0; right: 0; }
         }
@@ -399,7 +400,6 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         
-        // --- PERBAIKAN KLIK UNTUK MOBILE & DESKTOP (SUPAYA PLANET BISA DI-KLIK DI HP) ---
         let isDragging = false;
         let pointerDownPos = { x: 0, y: 0 };
 
@@ -413,7 +413,7 @@
         window.addEventListener('pointermove', (e) => {
             const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
             if (dist > 5) {
-                isDragging = true; // Jika digeser, tandai sebagai navigasi/drag
+                isDragging = true; 
             }
 
             if (!isDragging) return;
@@ -433,7 +433,6 @@
         window.addEventListener('pointerup', (event) => {
             if(event.target.id === 'close-btn' || event.target.closest('#info-panel')) return;
             
-            // Jika tidak digeser (murni ketukan/klik), proses pemilihan planet
             if (!isDragging) {
                 const clientX = event.clientX;
                 const clientY = event.clientY;
@@ -522,13 +521,15 @@
                 const distOffset = selectedPlanet.userData.radius * 3.5; 
                 
                 targetCameraPos.copy(targetPos).add(directionToSun.multiplyScalar(distOffset));
-                targetCameraPos.y += selectedPlanet.userData.radius * 0.8; 
+                
+                // --- [PERBAIKAN MOBILE]: Angkat posisi kamera sedikit lebih tinggi di HP agar planet tidak tertutup panel bawah ---
+                const isMobile = window.innerWidth < 768;
+                targetCameraPos.y += selectedPlanet.userData.radius * (isMobile ? 1.6 : 0.8); 
                 
                 const camRight = new THREE.Vector3(1, 0, 0);
                 camRight.applyQuaternion(camera.quaternion);
                 
-                // Responsif: geser target kamera lebih sedikit di layar HP agar panel tidak menutupi planet
-                const shiftAmount = selectedPlanet.userData.radius * (window.innerWidth < 768 ? 0.5 : 1.8); 
+                const shiftAmount = selectedPlanet.userData.radius * (isMobile ? 0 : 1.8); 
                 const shiftedTarget = targetPos.clone().add(camRight.multiplyScalar(shiftAmount));
                 
                 camera.position.lerp(targetCameraPos, 0.04);

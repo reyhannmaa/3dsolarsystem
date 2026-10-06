@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interactive Solar System</title>
+    
+    <!-- External Libraries & Plugins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Righteous&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Poppins', sans-serif; touch-action: none; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        
+        /* UI Kaca Utama */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .header { padding: 20px; color: white; text-shadow: 0 2px 10px rgba(0,0,0,1); display: flex; justify-content: space-between; align-items: flex-start;}
+        .header-text h1 { margin: 0; font-size: 2.2rem; letter-spacing: 2px; font-weight: 800; font-family: 'Righteous', cursive; text-transform: uppercase; color: #64f3d5; }
+        .header-text p { margin: 5px 0 0 0; font-size: 0.9rem; opacity: 0.9; color: #b8c6db; }
+        
+        .quiz-btn-header {
+            background: linear-gradient(135deg, #ff007f, #7928ca); border: none; color: white; padding: 12px 25px; border-radius: 30px; font-weight: 800;
+            cursor: pointer; pointer-events: auto; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(255,0,127,0.4); text-transform: uppercase; font-size: 0.9rem; font-family: 'Poppins', sans-serif;
+        }
+        .quiz-btn-header:hover { transform: scale(1.05) translateY(-3px); box-shadow: 0 8px 25px rgba(255,0,127,0.6); }
+
+        /* Menu Planet Bawah */
+        #planet-menu {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 12px; max-width: 90vw; overflow-x: auto; padding: 15px;
+            background: rgba(10, 12, 20, 0.65); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); pointer-events: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 10; transition: bottom 0.5s, opacity 0.5s;
+        }
+        #planet-menu::-webkit-scrollbar { height: 4px; }
+        #planet-menu::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        #planet-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+        
+        .planet-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: white;
+            padding: 10px 20px; border-radius: 30px; cursor: pointer; white-space: nowrap; transition: 0.3s;
+            font-size: 0.9rem; font-weight: 600; font-family: 'Poppins', sans-serif;
+        }
+        .planet-btn:hover { background: rgba(255,255,255,0.2); border-color: #64f3d5; color: #64f3d5; }
+        .planet-menu-hidden { bottom: -100px !important; opacity: 0; pointer-events: none !important; }
+
+        /* Panel Info */
+        #info-panel {
+            position: absolute; right: -420px; top: 50%; transform: translateY(-50%);
+            width: 360px; max-height: 80vh; overflow-y: auto;
+            background: linear-gradient(135deg, rgba(10, 12, 20, 0.9), rgba(5, 5, 8, 0.95));
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 30px; transition: right 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto; border-radius: 24px 0 0 24px; box-shadow: -10px 0 40px rgba(0,0,0,0.9);
+        }
+        #info-panel::-webkit-scrollbar { width: 6px; }
+        #info-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); }
+        #info-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        #info-panel.active { right: 0; }
+        #info-title { font-size: 2.2rem; margin-top: 0; margin-bottom: 5px; color: #64f3d5; font-family: 'Righteous', cursive; }
+        #info-subtitle { font-size: 0.85rem; color: #a0aec0; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .info-item { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 6px;}
+        .info-label { font-size: 0.75rem; color: #777; text-transform: uppercase; letter-spacing: 1px;}
+        .info-value { font-size: 0.95rem; font-weight: 600; text-align: right; color: #eee;}
+        .info-description { margin-top: 20px; font-size: 0.9rem; line-height: 1.6; color: #ccc; text-align: justify; }
+
+        .close-btn {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 12px 15px; border-radius: 8px; cursor: pointer;
+            margin-top: 25px; width: 100%; transition: all 0.3s; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem; font-family: 'Poppins', sans-serif;
+        }
+        .close-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        
+        /* Halaman Kuis Interaktif - Gamifikasi Ekstrem */
+        #quiz-page {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, rgba(30,10,60,0.95) 0%, rgba(5,5,15,0.98) 100%);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center;
+            color: white; opacity: 0; transition: opacity 0.4s;
+        }
+
+        /* MEMPERBAIKI MASALAH OVERLAP ALERT */
+        .swal2-container {
+            z-index: 3000 !important; 
+        }
+        
+        .quiz-top-nav {
+            position: absolute; top: 20px; width: 90%; max-width: 600px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .btn-exit-quiz { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px 20px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-exit-quiz:hover { background: #ff007f; box-shadow: 0 0 15px #ff007f; }
+        
+        .quiz-stats { display: flex; gap: 15px; }
+        .stat-badge { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 15px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .stat-badge i { color: #ffd700; }
+        
+        .quiz-container {
+            background: rgba(20, 20, 35, 0.85); border: 2px solid rgba(121, 40, 202, 0.5);
+            padding: 40px; border-radius: 24px; width: 90%; max-width: 500px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 40px rgba(121, 40, 202, 0.2);
+            position: relative; overflow: hidden;
+        }
+        
+        /* TRANSISI SOAL SMOOTH */
+        #quiz-content-wrapper {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 1; transform: scale(1);
+        }
+        .quiz-transitioning {
+            opacity: 0 !important;
+            transform: scale(0.95) !important;
+        }
+
+        .timer-track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 30px; overflow: hidden; position: relative;}
+        #timer-bar { height: 100%; width: 100%; background: #64f3d5; transition: width 0.1s linear, background 0.3s; box-shadow: 0 0 10px #64f3d5; }
+        
+        .quiz-header { font-size: 1.5rem; color: #ff007f; margin-bottom: 20px; font-weight: 900; font-family: 'Righteous', cursive; letter-spacing: 2px; }
+        #quiz-question { font-size: 1.25rem; line-height: 1.6; margin-bottom: 35px; font-weight: 600; }
+        
+        .quiz-tf-group { display: flex; gap: 20px; justify-content: center; }
+        .btn-game {
+            background: rgba(255,255,255,0.05); border: 2px solid; color: white; padding: 15px 30px; border-radius: 15px; 
+            cursor: pointer; font-size: 1.1rem; flex: 1; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: bold; font-family: 'Poppins', sans-serif;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .btn-true { border-color: #64f3d5; }
+        .btn-true:hover { background: #64f3d5; color: #000; transform: scale(1.05); box-shadow: 0 10px 20px rgba(100,243,213,0.4); }
+        .btn-false { border-color: #ff007f; }
+        .btn-false:hover { background: #ff007f; color: #fff; transform: scale(1.05); box-shadow: 0 10px 20px rgba(255,0,127,0.4); }
+        .btn-game i { font-size: 1.5rem; }
+        
+        .quiz-input-group { display: flex; flex-direction: column; gap: 15px; }
+        #quiz-input {
+            padding: 15px 20px; border-radius: 15px; border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.6); color: #64f3d5; font-size: 1.2rem; outline: none; text-align: center; font-weight: bold; text-transform: uppercase; font-family: 'Poppins', sans-serif;
+            transition: all 0.3s;
+        }
+        #quiz-input:focus { border-color: #7928ca; box-shadow: 0 0 20px rgba(121,40,202,0.4); transform: scale(1.02); }
+        
+        .btn-submit { background: linear-gradient(135deg, #7928ca, #ff007f); border: none; flex-direction: row; justify-content: center; padding: 15px;}
+        .btn-submit:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(255,0,127,0.5); }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #010103; color: white;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; pointer-events: auto; transition: opacity 0.8s;
+        }
+        .loader { border: 3px solid rgba(255,255,255,0.05); border-top: 3px solid #64f3d5; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s infinite; margin-bottom: 25px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .header { padding: 15px; flex-direction: row; align-items: center; justify-content: space-between;}
+            .header-text h1 { font-size: 1.4rem; }
+            .header-text p { display: none; } 
+            .quiz-btn-header { padding: 8px 15px; font-size: 0.75rem; }
+            
+            #info-panel {
+                width: 100%; right: 0; bottom: -100%; top: auto; transform: none; 
+                max-height: 38vh;
+                border-radius: 20px 20px 0 0; border-left: none; border-top: 1px solid rgba(255,255,255,0.2);
+                transition: bottom 0.6s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px;
+            }
+            #info-title { font-size: 1.6rem; }
+            .info-item { margin-bottom: 8px; }
+            .info-label { font-size: 0.7rem; }
+            .info-value { font-size: 0.85rem; }
+            .info-description { font-size: 0.8rem; margin-top: 10px; line-height: 1.4; }
+            #info-panel.active { bottom: 0; right: 0; }
+            
+            #planet-menu { bottom: 15px; padding: 10px; width: 95vw; }
+            .planet-btn { padding: 8px 15px; font-size: 0.8rem; }
+            
+            .quiz-container { padding: 25px 20px; width: 95%; border-radius: 20px;}
+            .quiz-header { font-size: 1.2rem; margin-bottom: 15px; }
+            #quiz-question { font-size: 1rem; margin-bottom: 25px;}
+            .btn-game { padding: 10px 15px; font-size: 0.9rem; }
+            .quiz-top-nav { top: 15px; width: 95%; }
+            .stat-badge { font-size: 0.8rem; padding: 5px 10px;}
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <h2 style="letter-spacing: 2px; font-weight: 300; font-size: 1.2rem; font-family: 'Righteous', cursive; color:#64f3d5;">ENTERING THE ORBIT...</h2>
+    </div>
+
+    <!-- HALAMAN KUIS MINI GAME -->
+    <div id="quiz-page">
+        <div class="quiz-top-nav animate__animated animate__fadeInDown">
+            <button class="btn-exit-quiz" onclick="closeQuiz()"><i class="fas fa-arrow-left"></i> BACK</button>
+            <div class="quiz-stats">
+                <div class="stat-badge"><i class="fas fa-fire"></i> <span id="q-streak">0</span>x</div>
+                <div class="stat-badge"><i class="fas fa-star"></i> <span id="q-score">0</span></div>
+            </div>
+        </div>
+
+        <div class="quiz-container animate__animated animate__zoomIn" id="quiz-card">
+            <div class="quiz-header"><i class="fas fa-rocket"></i> COSMIC QUIZ</div>
+            <div class="timer-track"><div id="timer-bar"></div></div>
+            
+            <!-- Wrapper untuk Animasi Transisi Halus -->
+            <div id="quiz-content-wrapper">
+                <div id="quiz-question">Question will appear here.</div>
+                
+                <!-- Opsi True/False -->
+                <div id="quiz-tf" class="quiz-tf-group" style="display: none;">
+                    <button class="btn-game btn-true" onclick="checkAnswer('true')"><i class="fas fa-check-circle"></i> True</button>
+                    <button class="btn-game btn-false" onclick="checkAnswer('false')"><i class="fas fa-times-circle"></i> False</button>
+                </div>
+                
+                <!-- Opsi Isian Singkat -->
+                <div id="quiz-short" class="quiz-input-group" style="display: none;">
+                    <input type="text" id="quiz-input" placeholder="TYPE YOUR ANSWER..." autocomplete="off">
+                    <button class="btn-game btn-submit" onclick="checkAnswer(document.getElementById('quiz-input').value)"><i class="fas fa-paper-plane"></i> SUBMIT ANSWER</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+    
+    <div id="ui-layer">
+        <div class="header">
+            <div class="header-text">
+                <h1>SOLAR SYSTEM</h1>
+                <p>Lets explore our solar system.</p>
+            </div>
+            <button class="quiz-btn-header" onclick="startQuiz()"><i class="fas fa-gamepad"></i> Quiz Time</button>
+        </div>
+
+        <!-- Menu Daftar Planet -->
+        <div id="planet-menu"></div>
+        
+        <!-- Panel Info -->
+        <div id="info-panel">
+            <h2 id="info-title">Planet Name</h2>
+            <div id="info-subtitle">Astronomical Data</div>
+            <div class="info-item"><span class="info-label">Type</span><span class="info-value" id="info-type">-</span></div>
+            <div class="info-item"><span class="info-label">Orbital Distance</span><span class="info-value" id="info-distance">-</span></div>
+            <div class="info-item"><span class="info-label">Diameter</span><span class="info-value" id="info-radius">-</span></div>
+            <div class="info-item"><span class="info-label">Mass</span><span class="info-value" id="info-mass">-</span></div>
+            <div class="info-item"><span class="info-label">Surface Temperature</span><span class="info-value" id="info-temp">-</span></div>
+            <div class="info-description" id="info-desc"></div>
+            <button class="close-btn" id="close-btn">Back To Orbit</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // INISIALISASI DASAR THREE.JS
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000); 
+        scene.fog = new THREE.FogExp2(0x000000, 0.00015);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera.position.set(0, 160, 260);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputEncoding = THREE.sRGBEncoding; 
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; 
+        renderer.toneMappingExposure = 0.85; 
+        container.appendChild(renderer.domElement);
+        const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+        controls.maxDistance = 4000; controls.minDistance = 5;
+        
+        setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => { loadingScreen.style.display = 'none'; }, 800);
+        }, 1500);
+
+        const ambientLight = new THREE.AmbientLight(0x080812, 0.3); scene.add(ambientLight);
+        const sunLight = new THREE.PointLight(0xfff7e6, 2.2, 4000, 1.5); scene.add(sunLight);
+
+        function createGlowingTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+            const context = canvas.getContext('2d'); const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)'); gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            context.fillStyle = gradient; context.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(canvas);
+        }
+        const starTexture = createGlowingTexture();
+
+        function createTextSprite(text) {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 128;
+            const context = canvas.getContext('2d');
+            context.font = 'bold 36px "Poppins", sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+            context.shadowColor = 'rgba(0, 0, 0, 0.9)'; context.shadowBlur = 8; context.shadowOffsetX = 2; context.shadowOffsetY = 2;
+            context.fillStyle = 'rgba(255, 255, 255, 0.95)'; context.fillText(text, 128, 64);
+            const texture = new THREE.Texture(canvas); texture.needsUpdate = true;
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+            const sprite = new THREE.Sprite(spriteMat); sprite.scale.set(22, 11, 1); return sprite;
+        }
+
+        const galaxyGeometry = new THREE.BufferGeometry(); const galaxyCount = 8000;
+        const galPos = new Float32Array(galaxyCount * 3); const galColors = new Float32Array(galaxyCount * 3);
+        for(let i = 0; i < galaxyCount; i++) {
+            const i3 = i * 3; const radius = 500 + Math.random() * 3000; const theta = Math.random() * Math.PI * 2;
+            const ySpread = (Math.random() - 0.5) * (Math.random() * 400);
+            galPos[i3] = Math.cos(theta) * radius; galPos[i3+1] = ySpread; galPos[i3+2] = Math.sin(theta) * radius;
+            const color = new THREE.Color(); const randColor = Math.random();
+            if(randColor > 0.8) color.setHex(0x4a235a); else if(randColor > 0.5) color.setHex(0x154360); 
+            else if(randColor > 0.3) color.setHex(0x6e2c00); else color.setHex(0x1a252c); 
+            galColors[i3] = color.r; galColors[i3+1] = color.g; galColors[i3+2] = color.b;
+        }
+        galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(galPos, 3)); galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(galColors, 3));
+        const galaxyMesh = new THREE.Points(galaxyGeometry, new THREE.PointsMaterial({ size: 30, map: starTexture, vertexColors: true, transparent: true, opacity: 0.15, depthWrite: false, blending: THREE.AdditiveBlending }));
+        scene.add(galaxyMesh);
+
+        const starsGeometry = new THREE.BufferGeometry(); const starsCount = 4000;
+        const posArray = new Float32Array(starsCount * 3); const colorArray = new Float32Array(starsCount * 3); const sizeArray = new Float32Array(starsCount);
+        for(let i = 0; i < starsCount; i++) {
+            const i3 = i * 3; const r = 800 + Math.random() * 3000; const u = Math.random(); const v = Math.random();
+            const theta = u * 2.0 * Math.PI; const phi = Math.acos(2.0 * v - 1.0);
+            posArray[i3] = r * Math.sin(phi) * Math.cos(theta); posArray[i3+1] = r * Math.sin(phi) * Math.sin(theta); posArray[i3+2] = r * Math.cos(phi);
+            const colorType = Math.random(); const color = new THREE.Color();
+            if (colorType > 0.9) color.setHex(0xaaccff); else if (colorType > 0.7) color.setHex(0xffd0a0); else color.setHex(0xffffff); 
+            colorArray[i3] = color.r; colorArray[i3+1] = color.g; colorArray[i3+2] = color.b; sizeArray[i] = Math.random() * 6 + 2;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3)); starsGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3)); starsGeometry.setAttribute('size', new THREE.BufferAttribute(sizeArray, 1));
+        const starsMesh = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ map: starTexture, vertexColors: true, transparent: true, opacity: 0.8, sizeAttenuation: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+        scene.add(starsMesh);
+
+        const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTexture, color: 0xffaa00, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
+        sunGlow.scale.set(70, 70, 1); scene.add(sunGlow);
+
+        const planetMeshes = []; let selectedPlanet = null;
+        const planetsData = [
+            { id: 'sun', name: 'Sun', type: 'Main Sequence Star', color: 0xffcc33, radius: 15, distance: 0, speed: 0, mass: '1.989 × 10^30 kg', temp: '5.500 °C', textureMap: 'sunmap.jpg', desc: 'The star at the center of the solar system. Its huge mass creates a strong gravitational pull that keeps planets in their orbits.' },
+            { id: 'mercury', name: 'Mercury', type: 'Terrestrial Planet', color: 0x888888, radius: 1.5, distance: 30, speed: 0.02, mass: '3.301 × 10^23 kg', temp: '167 °C', textureMap: 'mercurymap.jpg', desc: 'The terrestrial planet that is the closest to the Sun and the smallest in the solar system.' },
+            { id: 'venus', name: 'Venus', type: 'Terrestrial Planet', color: 0xe3bb76, radius: 3.5, distance: 45, speed: 0.015, mass: '4.867 × 10^24 kg', temp: '462 °C', textureMap: 'venusmap.jpg', desc: 'The hottest planet (up to 465°C) due to a thick atmosphere and strong greenhouse effect. It also has a unique backward rotation.' },
+            { id: 'earth', name: 'Earth', type: 'Terrestrial Planet', color: 0x2b82c9, radius: 4, distance: 62, speed: 0.012, mass: '5.972 × 10^24 kg', temp: '15 °C', textureMap: 'earthmap.jpg', nightMap: 'earthnightmap.jpg', desc: 'The only terrestrial planet known to support life, possessing water and oxygen. Its rotation causes day and night.' },
+            { id: 'mars', name: 'Mars', type: 'Terrestrial Planet', color: 0xc1440e, radius: 3, distance: 78, speed: 0.01, mass: '6.39 × 10^23 kg', temp: '-65 °C', textureMap: 'marsmap.jpg', desc: 'Known as the "Red Planet" because its surface contains oxidized iron compounds. The asteroid belt separates it from Jupiter.' },
+            { id: 'jupiter', name: 'Jupiter', type: 'Gas Giant', color: 0xd39c7e, radius: 9, distance: 120, speed: 0.005, mass: '1.898 × 10^27 kg', temp: '-110 °C', textureMap: 'jupitermap.jpg', desc: 'The largest Jovian (gas giant) planet in the solar system, much larger than Earth, with more than 80 natural satellites.' },
+            { id: 'saturn', name: 'Saturn', type: 'Gas Giant', color: 0xe3d599, radius: 7.5, distance: 165, speed: 0.003, mass: '5.683 × 10^26 kg', temp: '-140 °C', hasRings: true, textureMap: 'saturnmap.jpg', ringMap: 'saturnringmap.png', desc: 'A gas giant known for having the most prominent ring system made of ice and rock particles.' },
+            { id: 'uranus', name: 'Uranus', type: 'The Ice Giant', color: 0xa1c6cc, radius: 5.5, distance: 210, speed: 0.002, mass: '8.681 × 10^25 kg', temp: '-195 °C', hasRings: true, ringTilt: 0, textureMap: 'uranusmap.jpg', ringMap: 'saturnringmap.png', desc: 'An Ice Giant spinning at an extreme angle (unique rotation), making it appear to roll in its orbit.' },
+            { id: 'neptune', name: 'Neptune', type: 'The Ice Giant', color: 0x2957a3, radius: 5.3, distance: 250, speed: 0.001, mass: '1.024 × 10^26 kg', temp: '-200 °C', textureMap: 'neptunemap.jpg', desc: 'The farthest planet from the Sun, giving it a very low average temperature and the longest revolution period.' }
+        ];
+
+        const planetMenuContainer = document.getElementById('planet-menu');
+        planetsData.forEach(p => {
+            const btn = document.createElement('button'); btn.className = 'planet-btn'; btn.innerText = p.name;
+            btn.onclick = () => selectPlanetById(p.id); planetMenuContainer.appendChild(btn);
+        });
+
+        function createSolarSystem() {
+            planetsData.forEach((data) => {
+                let material = data.id === 'sun' ? new THREE.MeshBasicMaterial({ color: data.color }) : new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.8, metalness: 0.05 });
+                if (data.textureMap) {
+                    const img = new Image(); img.onload = function() {
+                        const texture = new THREE.Texture(img); texture.encoding = THREE.sRGBEncoding; texture.anisotropy = maxAnisotropy; texture.needsUpdate = true;
+                        material.map = texture; material.color = new THREE.Color(0xffffff); material.needsUpdate = true;
+                    }; img.src = data.textureMap;
+                }
+                if (data.nightMap) {
+                    const nImg = new Image(); nImg.onload = function() {
+                        const nTex = new THREE.Texture(nImg); nTex.encoding = THREE.sRGBEncoding; nTex.anisotropy = maxAnisotropy; nTex.needsUpdate = true;
+                        material.emissiveMap = nTex; material.emissive = new THREE.Color(0xffffff); material.emissiveIntensity = 0.5; material.needsUpdate = true;
+                    }; nImg.src = data.nightMap;
+                }
+
+                const mesh = new THREE.Mesh(new THREE.SphereGeometry(data.radius, 64, 64), material);
+                const orbitObj = new THREE.Object3D(); scene.add(orbitObj); orbitObj.add(mesh); mesh.position.x = data.distance;
+                
+                const labelSprite = createTextSprite(data.name); scene.add(labelSprite); 
+                mesh.userData = { ...data, orbitObj: orbitObj, labelSprite: labelSprite, angle: Math.random() * Math.PI * 2, normalSpeed: data.speed, normalRotationSpeed: data.id === 'sun' ? 0.005 : 0.02 };
+                planetMeshes.push(mesh);
+
+                if (data.distance > 0) {
+                    const pathMesh = new THREE.Mesh(new THREE.RingGeometry(data.distance - 0.1, data.distance + 0.1, 128), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.05 }));
+                    pathMesh.rotation.x = Math.PI / 2; scene.add(pathMesh);
+                }
+
+                if (data.hasRings) {
+                    const ringGeo = new THREE.RingGeometry(data.radius * 1.5, data.radius * 2.5, 128);
+                    const pos = ringGeo.attributes.position; const uv = ringGeo.attributes.uv;
+                    for (let i = 0; i < pos.count; i++) {
+                        const radius = Math.sqrt(pos.getX(i)**2 + pos.getY(i)**2); uv.setXY(i, (radius - data.radius * 1.5) / (data.radius * 2.5 - data.radius * 1.5), 1); 
+                    }
+                    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 1.0 });
+                    if (data.ringMap) {
+                        const ringImg = new Image(); ringImg.onload = function() {
+                            const ringTex = new THREE.Texture(ringImg); ringTex.encoding = THREE.sRGBEncoding; ringTex.needsUpdate = true; ringMat.map = ringTex; ringMat.needsUpdate = true;
+                        }; ringImg.src = data.ringMap;
+                    }
+                    const ringMesh = new THREE.Mesh(ringGeo, ringMat); ringMesh.rotation.x = data.ringTilt !== undefined ? data.ringTilt : Math.PI / 2; mesh.add(ringMesh);
+                }
+            });
+        }
+        createSolarSystem();
+
+        function openPlanetInfo(mesh) {
+            selectedPlanet = mesh; controls.enabled = false; 
+            document.getElementById('planet-menu').classList.add('planet-menu-hidden'); 
+            const pData = mesh.userData;
+            document.getElementById('info-title').innerText = pData.name;
+            document.getElementById('info-type').innerText = pData.type;
+            document.getElementById('info-distance').innerText = pData.id === 'sun' ? 'Core' : pData.distance + ' Million KM (Scale)';
+            document.getElementById('info-radius').innerText = pData.radius + ' (Scale)';
+            document.getElementById('info-mass').innerText = pData.mass;
+            document.getElementById('info-temp').innerText = pData.temp;
+            document.getElementById('info-desc').innerText = pData.desc;
+            document.getElementById('info-panel').classList.add('active');
+        }
+
+        function closePlanetInfo() {
+            selectedPlanet = null; controls.enabled = true; 
+            document.getElementById('planet-menu').classList.remove('planet-menu-hidden');
+            document.getElementById('info-panel').classList.remove('active');
+        }
+
+        function selectPlanetById(id) {
+            const mesh = planetMeshes.find(m => m.userData.id === id);
+            if(mesh) openPlanetInfo(mesh);
+        }
+
+        const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2();
+        let isDragging = false; let pointerDownPos = { x: 0, y: 0 };
+
+        window.addEventListener('pointerdown', (e) => {
+            if(e.target.closest('#info-panel') || e.target.closest('#planet-menu') || e.target.closest('#quiz-page')) return;
+            isDragging = false; pointerDownPos.x = e.clientX; pointerDownPos.y = e.clientY;
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) > 5) isDragging = true; 
+            if (!isDragging) return;
+            if (selectedPlanet) {
+                selectedPlanet.rotation.y += (e.clientX - pointerDownPos.x) * 0.005; selectedPlanet.rotation.x += (e.clientY - pointerDownPos.y) * 0.005;
+            }
+            pointerDownPos.x = e.clientX; pointerDownPos.y = e.clientY;
+        });
+
+        window.addEventListener('pointerup', (event) => {
+            if(event.target.id === 'close-btn' || event.target.closest('#info-panel') || event.target.closest('#planet-menu') || event.target.closest('#quiz-page')) return;
+            if (!isDragging) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(planetMeshes);
+                if (intersects.length > 0) openPlanetInfo(intersects[0].object);
+                else closePlanetInfo();
+            }
+            isDragging = false;
+        });
+
+        document.getElementById('close-btn').addEventListener('click', closePlanetInfo);
+
+        const targetCameraPos = new THREE.Vector3();
+        function animate() {
+            requestAnimationFrame(animate);
+            galaxyMesh.rotation.y += 0.0001; starsMesh.rotation.y += 0.00005;
+
+            planetMeshes.forEach(mesh => {
+                const data = mesh.userData; let cOrbit = data.normalSpeed, cRot = data.normalRotationSpeed;
+                if (selectedPlanet === mesh) { cOrbit = 0; if (!isDragging) mesh.rotation.y += 0.002; } 
+                else if (selectedPlanet !== null) { cOrbit = data.normalSpeed * 0.1; mesh.rotation.y += cRot; } 
+                else { mesh.rotation.y += cRot; }
+
+                if (data.id !== 'sun') { data.angle += cOrbit; mesh.position.x = Math.cos(data.angle) * data.distance; mesh.position.z = Math.sin(data.angle) * data.distance; }
+                if (data.labelSprite) { data.labelSprite.position.x = mesh.position.x; data.labelSprite.position.z = mesh.position.z; data.labelSprite.position.y = mesh.position.y + data.radius + 4; }
+            });
+
+            if (selectedPlanet) {
+                const targetPos = new THREE.Vector3(); selectedPlanet.getWorldPosition(targetPos);
+                let directionToSun = targetPos.clone().normalize().negate(); if (selectedPlanet.userData.id === 'sun') directionToSun = new THREE.Vector3(0, 0, 1);
+                directionToSun.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 5);
+                
+                const isMobile = window.innerWidth < 768;
+                
+                const distOffset = selectedPlanet.userData.radius * (isMobile ? 5.5 : 3.5); 
+                targetCameraPos.copy(targetPos).add(directionToSun.multiplyScalar(distOffset));
+                
+                const shiftedTarget = targetPos.clone();
+                if (isMobile) {
+                    shiftedTarget.y -= selectedPlanet.userData.radius * 2.5; 
+                    targetCameraPos.y -= selectedPlanet.userData.radius * 0.5; 
+                } else {
+                    const camRight = new THREE.Vector3(1, 0, 0); camRight.applyQuaternion(camera.quaternion);
+                    shiftedTarget.add(camRight.multiplyScalar(selectedPlanet.userData.radius * 1.8));
+                    targetCameraPos.y += selectedPlanet.userData.radius * 0.8;
+                }
+                
+                camera.position.lerp(targetCameraPos, 0.04); controls.target.lerp(shiftedTarget, 0.04);
+            } else {
+                controls.target.lerp(new THREE.Vector3(0,0,0), 0.05);
+            }
+            controls.update(); renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- SISTEM KUIS MINI-GAME GAMIFIKASI ---
+        const quizQuestions = [
+            { q: "1. The motion of a planet as it orbits the Sun is called...", type: "short", a: "revolution" },
+            { q: "2. Mars is the planet closest to the Sun.", type: "tf", a: "false" },
+            { q: "3. The planet known as the “Red Planet” because its surface contains many oxidized iron compounds is...", type: "short", a: "mars" },
+            { q: "4. The planets in the solar system revolve around the Sun along paths called orbits.", type: "tf", a: "true" },
+            { q: "5. The planet that has more than 80 natural satellites and is the largest planet in the solar system is...", type: "short", a: "jupiter" },
+            { q: "6. Jupiter is much larger than Earth.", type: "tf", a: "true" },
+            { q: "7. The farther a planet is from the Sun, the longer it takes for that planet to complete one revolution.", type: "tf", a: "true" },
+            { q: "8. The planet that has a very low average temperature because it is very far from the Sun is...", type: "short", a: "neptune" },
+            { q: "9. The Sun is the star at the center of the solar system.", type: "tf", a: "true" },
+            { q: "10. The hottest planet in the solar system is...", type: "short", a: "venus" },
+            { q: "11. The planet with the most prominent ring system made of ice and rock particles is...", type: "short", a: "saturn" },
+            { q: "12. The Solar System consists of terrestrial planets which are rocky, and Jovian planets which are gas giants.", type: "tf", a: "true" },
+            { q: "13. Based on its characteristics, the only planet that can support life because it has water and oxygen is...", type: "short", a: "earth" },
+            { q: "14. The high temperature on Venus (465°C) is caused by a thick atmosphere and strong greenhouse effect.", type: "tf", a: "true" },
+            { q: "15. A celestial object that has three parts: nucleus, coma, and tail when it gets close to the Sun is called a...", type: "short", a: "comet" },
+            { q: "16. The characteristic that causes day and night on Earth is called Earth's...", type: "short", a: "rotation" },
+            { q: "17. All planets in the solar system rotate and revolve in the same direction, except for Venus and Uranus which have unique rotations.", type: "tf", a: "true" },
+            { q: "18. The Sun's main characteristic as the center of the solar system is its huge mass that creates a strong... force to keep planets in orbit.", type: "short", a: "gravitational pull" },
+            { q: "19. The farther a planet is from the Sun, the faster its revolution period.", type: "tf", a: "false" },
+            { q: "20. The asteroid belt located between Mars and Jupiter is the dividing line between inner and outer planets.", type: "tf", a: "true" }
+        ];
+
+        let currentQuestionIdx = 0; let score = 0; let streak = 0; let timerInterval; let timeLeft = 300;
+        let isAnswering = false; 
+
+        const quizPage = document.getElementById('quiz-page'); const qText = document.getElementById('quiz-question');
+        const qTf = document.getElementById('quiz-tf'); const qShort = document.getElementById('quiz-short'); const qInput = document.getElementById('quiz-input');
+        const timerBar = document.getElementById('timer-bar'); const quizCard = document.getElementById('quiz-card');
+        const contentWrapper = document.getElementById('quiz-content-wrapper');
+
+        function startQuiz() {
+            currentQuestionIdx = 0; score = 0; streak = 0; isAnswering = false;
+            updateStats();
+            quizPage.style.display = 'flex';
+            document.getElementById('planet-menu').classList.add('planet-menu-hidden');
+            setTimeout(() => { quizPage.style.opacity = '1'; }, 10);
+            loadQuestion();
+        }
+
+        function closeQuiz() {
+            clearInterval(timerInterval);
+            Swal.close(); 
+            isAnswering = false;
+            quizPage.style.opacity = '0';
+            setTimeout(() => { 
+                quizPage.style.display = 'none'; 
+                document.getElementById('planet-menu').classList.remove('planet-menu-hidden');
+            }, 400);
+        }
+
+        function updateStats() {
+            document.getElementById('q-score').innerText = score;
+            document.getElementById('q-streak').innerText = streak;
+        }
+
+        function startTimer() {
+            timeLeft = 300; // 300 ticks x 100ms = 30 Detik
+            timerBar.style.width = '100%'; 
+            timerBar.style.background = '#64f3d5';
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isAnswering) return; 
+                timeLeft -= 1; 
+                // Hitung persen dari 300 (total nilai)
+                timerBar.style.width = (timeLeft / 3) + '%'; 
+                
+                if(timeLeft <= 150) timerBar.style.background = '#ffd700'; // Kuning saat sisa 15 detik (50%)
+                if(timeLeft <= 60) timerBar.style.background = '#ff007f';  // Merah saat sisa 6 detik (20%)
+                
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    checkAnswer('', true); 
+                }
+            }, 100);
+        }
+
+        function loadQuestion() {
+            quizCard.classList.remove('animate__shakeX', 'animate__headShake'); 
+            
+            if (currentQuestionIdx >= quizQuestions.length) {
+                // GAME OVER
+                timerBar.style.width = '100%'; timerBar.style.background = '#7928ca';
+                qText.innerHTML = `<span style="color:#64f3d5; font-size:1.5rem;"><i class="fas fa-space-shuttle"></i> MISSION COMPLETE!</span><br><br> Total Score: <b style="font-size:2rem; color:#ffd700;">${score * 100}</b>`;
+                qTf.style.display = 'none'; qShort.style.display = 'none';
+                
+                if(score > 5) {
+                    confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#ff007f', '#64f3d5', '#7928ca'] });
+                }
+                return;
+            }
+
+            const current = quizQuestions[currentQuestionIdx];
+            qText.innerText = current.q;
+            
+            if (current.type === "tf") {
+                qTf.style.display = 'flex'; qShort.style.display = 'none';
+            } else {
+                qTf.style.display = 'none'; qShort.style.display = 'flex';
+                qInput.value = ""; 
+                setTimeout(() => qInput.focus(), 350); 
+            }
+            startTimer();
+        }
+
+        function checkAnswer(answer, isTimeout = false) {
+            if (isAnswering) return; 
+            isAnswering = true;
+            clearInterval(timerInterval);
+
+            const current = quizQuestions[currentQuestionIdx];
+            const isCorrect = !isTimeout && (answer.toLowerCase().trim() === current.a);
+
+            if (isCorrect) {
+                streak++; score += (1 + streak); 
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#64f3d5', '#ffd700'] });
+                
+                // MENGUBAH TITLE MENGGUNAKAN HTML UNTUK FONTAWESOME
+                Swal.fire({
+                    title: '<i class="fas fa-check-circle" style="color: #64f3d5;"></i> CORRECT!', 
+                    html: `Combo x${streak}`, icon: 'success',
+                    background: '#1a1a2e', color: '#64f3d5', timer: 1500, showConfirmButton: false, backdrop: 'rgba(0,0,0,0.6)'
+                }).then(() => { nextQuestion(); });
+
+            } else {
+                streak = 0; 
+                quizCard.classList.add('animate__shakeX'); 
+                
+                // MENGGUNAKAN FONTAWESOME HTML DAN MENGUBAH PARAMETER text MENJADI html
+                let errorMsg = isTimeout ? '<i class="fas fa-hourglass-end" style="color: #ffd700;"></i> Time is up!' : `Correct Answer: ${current.a.toUpperCase()}`;
+                
+                Swal.fire({
+                    title: '<i class="fas fa-times-circle" style="color: #ff007f;"></i> WRONG!', 
+                    html: errorMsg, icon: 'error',
+                    background: '#1a1a2e', color: '#ff007f', confirmButtonColor: '#7928ca', confirmButtonText: 'Continue', backdrop: 'rgba(0,0,0,0.6)'
+                }).then(() => { nextQuestion(); });
+            }
+            updateStats();
+        }
+
+        function nextQuestion() {
+            contentWrapper.classList.add('quiz-transitioning');
+            
+            setTimeout(() => {
+                currentQuestionIdx++;
+                loadQuestion(); 
+                contentWrapper.classList.remove('quiz-transitioning');
+                
+                setTimeout(() => {
+                    isAnswering = false; 
+                }, 300);
+
+            }, 300); 
+        }
+
+        qInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') { checkAnswer(qInput.value); }
+        });
+    </script>
+</body>
+</html>
